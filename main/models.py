@@ -25,6 +25,12 @@ class Game(models.Model):
     category = models.ForeignKey(Category, verbose_name=_('Категорий') , on_delete=models.SET_NULL, null=True)
     followers = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name=_('Подпсчики'))
 
+    def get_battles(self):
+        return Battle.objects.filter(game__id=self.id).count()
+
+    def get_followers(self):
+        return self.followers.all().count()
+
     def __str__ (self):
         return self.name
     
