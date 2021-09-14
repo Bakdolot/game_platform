@@ -25,6 +25,12 @@ class Game(models.Model):
     followers = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name=_('Подпсчики'), blank=True)
     icon = models.ImageField(upload_to='gameicons', verbose_name=_('Иконка игры'))
 
+    def get_battles(self):
+        return Battle.objects.filter(game__id=self.id).count()
+
+    def get_followers(self):
+        return self.followers.all().count()
+
     def __str__ (self):
         return self.name
 
