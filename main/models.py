@@ -34,9 +34,6 @@ class Game(models.Model):
     def __str__ (self):
         return self.name
 
-    def get_battles(self):
-        return Battle.objects.filter(game__id=self.id).count()
-
     def get_followers(self):
         return self.followers.all().count()
 

@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractUser
+from django.db.models.fields import IntegerField
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django_resized import ResizedImageField
@@ -36,6 +37,9 @@ class UserProfile(models.Model):
     steem_account = models.CharField(max_length=50, blank=True, verbose_name=_('Стим аккаунт'))
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name=_('Лайки'), blank=True, related_name='UserProfileLikes')
     dislikes = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name=_('Дизлайки'), blank=True, related_name='UserProfileDislikes')
+    courtesy_rate_sum = IntegerField(verbose_name=_('Сумма рейтинга вежливости'), blank=True, default=0)
+    punctuality_rate_sum = IntegerField(blank=True, default=0, verbose_name=_('Сумма рейтинга пунктуальности'))
+    adequacy_rate_sum = IntegerField(blank=True, default=0, verbose_name=_('Сумма рейтинга адекватности'))
 
     def __str__(self):
         return self.user.username
@@ -56,6 +60,23 @@ class UserProfile(models.Model):
             'battles': BattleHistory.objects.filter(user = self.user).count(),
             'victories': BattleHistory.objects.filter(user = self.user, result='2').count(),
             'defeats': BattleHistory.objects.filter(user = self.user, result='1').count(),
+        }
+    
+    def get_rate(self):
+        courtesy = 0
+        user_scores = UserScores.objects.filter(user__id=self.id)
+        if self.courtesy_rate_sum:
+            courtesy = self.courtesy_rate_sum / user_scores.filter(type='1').count()
+        punctuality = 0
+        if self.punctuality_rate_sum:
+            punctuality = self.punctuality_rate_sum / user_scores.filter(type='2').count()
+        adequacy = 0
+        if self.adequacy_rate_sum:
+            adequacy = self.adequacy_rate_sum / user_scores.filter(type='3').count()
+        return {
+            'courtesy': courtesy,
+            'punctuality': punctuality,
+            'adequacy': adequacy
         }
 
 
@@ -107,7 +128,8 @@ class Notification(models.Model):
         ('4', _('Сражение началось')),
         ('5', _('Баланс пополнен')),
         ('6', _('Сражение отменено')),
-        ('7', _('Предложение на сражение'))
+        ('7', _('Предложение на сражение')),
+        ('8', _('Успешно выведено'))
     )
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name=_('Пользователь'))
@@ -145,33 +167,16 @@ class UserComment(models.Model):
 
 
 class UserScores(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name=_('Пользователь'))
-    score_sum = models.IntegerField(default=0, verbose_name=_('Сумма всех оценок'))
-    evaluators = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name=_('Оценщики'), through='User_Evaluators', related_name='User_Evaluators')
-
-    def __str__(self):
-        return self.user
-
-    def get_score(self):
-        return self.score_sum / self.evaluators.all().count()
-    
-    class Meta:
-        verbose_name = _('Оценка')
-        verbose_name_plural = _('Оценки')
-
-
-class User_Evaluators(models.Model):
-    SCORE_CHOICE = (
-        (1, '1'),
-        (2, '2'),
-        (3, '3'),
-        (4, '4'),
-        (5, '5')
+    TYPE_CHOICES = (
+        ('1', _('Вежливость')),
+        ('2', _('Пунктуальность')),
+        ('3', _('Адекватность'))
     )
 
-    user = models.ForeignKey(UserScores, on_delete=models.CASCADE, verbose_name=_('Пользователь'))
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name=_('Пользователь'))
     evaluator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name=_('Оценщик'))
-    score = models.SmallIntegerField(verbose_name=_('Оценка'), choices=SCORE_CHOICE)
+    score = models.SmallIntegerField(verbose_name=_('Оценка'))
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES, verbose_name=_('Тип'))
 
     def __str__(self):
         return f'{self.evaluator} -> {self.user}'
@@ -179,4 +184,4 @@ class User_Evaluators(models.Model):
     class Meta:
         verbose_name = _('Оценка')
         verbose_name_plural = _('Оценки')
-        unique_together = [['evaluator', 'user']]
+        unique_together = [['evaluator', 'user', 'type']]

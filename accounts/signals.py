@@ -4,7 +4,14 @@ from django.dispatch import receiver
 from .models import UserProfile, UserScores
 
 
-@receiver(post_save, sender=UserProfile)
-def create_profile(sender, instance, created, **kwargs):
+@receiver(post_save, sender=UserScores)
+def add_rate_sum(sender, instance, created, **kwargs):
     if created:
-        UserScores.objects.create(user=instance.user)
+        profile = UserProfile.objects.get(id=instance.user.id)
+        if instance.type == '1':
+            profile.courtesy_rate_sum += instance.score
+        elif instance.type == '2':
+            profile.punctuality_rate_sum += instance.score
+        elif instance.type == '3':
+            profile.adequacy_rate_sum += instance.score
+        profile.save()
