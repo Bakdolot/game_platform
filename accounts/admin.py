@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import *
 
 
@@ -15,5 +16,7 @@ class UserAdmin(admin.ModelAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.register(Identification)
+admin.site.register(BattleHistory)
+admin.site.register(UserScores)
 admin.site.register(Notification)
 admin.site.register(UserComment)

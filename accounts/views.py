@@ -1,15 +1,16 @@
-from main.models import Game
-from random import randint, choices
-from string import ascii_letters
 from rest_framework.generics import *
 from rest_framework.permissions import IsAuthenticated
-from .serializers import *
 from rest_framework.response import Response
 from rest_framework import status
 from fcm_django.models import FCMDevice
 
 from .utils import send_message_code, generate_code
 from .models import *
+from .serializers import *
+from main.models import BattleResponse, Game
+
+from random import choices
+from string import ascii_letters
 
 
 class FcmCreateView(UpdateAPIView):
@@ -41,33 +42,81 @@ class FcmCreateView(UpdateAPIView):
 
 class UserProfileDetailView(RetrieveAPIView):
     serializer_class = UserProfileSerializer
-    queryset = UserProfile.objects.all()
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = get_object_or_404(UserProfile, id=self.kwargs['pk'])
+        return queryset
 
     def get(self, request, *args, **kwargs):
         user = self.get_queryset().user
         user_ser = self.get_serializer(self.get_queryset())
-        user_score = UserScores.objects.get(user=user)
-        user_score_ser = UserScoreSerializer(user_score)
         user_comments = UserComment.objects.filter(user__in=[user])
-        user_comments_ser = UserComment(user_comments, many=True)
+        user_comments_ser = UserCommentsSerializer(user_comments, many=True)
         games = []
         for game in Game.objects.filter(followers=user):
             battle = BattleHistory.objects.filter(battle__game=game, user=user)
+            victories = battle(result='2').count()
+            defeats = battle(result='1').count()
+            victory_percent = 0
+            if battle.count():
+                victory_percent = (victories * 100) / battle.count()
             games.append({
                 'game': game.name,
                 'battles': battle.count(),
-                'victories': battle(result='2').count(),
-                'defeats': battle(result='1').count(),
-                'victory_percent': (battle(result='2').count() * 100) / battle.count()
+                'victories': victories,
+                'defeats': defeats,
+                'victory_percent': victory_percent
             })
         games_ser = UserGameResultsSerializer(games, many=True)
         return Response({
             'Profile': user_ser.data,
-            'User score': user_score_ser.data,
             'Comments': user_comments_ser.data,
             'Games': games_ser.data
         })
+
+
+class CreateUserScoreView(CreateAPIView):
+    serializer_class = CreateScoreUserSerializer
+    queryset = UserScores
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        profile = UserProfile.objects.get(id=request.data['user'])
+        if request.data['type'] == '1':
+            profile.courtesy_rate_sum += request.data['score']
+        elif request.data['type'] == '2':
+            profile.punctuality_rate_sum += request.data['score']
+        elif request.data['type'] == '3':
+            profile.adequacy_rate_sum += request.data['score']
+        profile.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class CreateCommentView(CreateAPIView):
+    serializer_class = CreateCommentSerializer
+    queryset = UserComment.objects.all()
+    permission_classes = [IsAuthenticated]
+
+
+class MyBattlesView(ListAPIView):
+    serializer_class = UserBattlesSerializer
+
+    def get_queryset(self):
+        type = self.request.data['type']
+        if type == 'owner':
+            queryset = Battle.objects.filter(owner=self.request.user)
+        elif type == 'response':
+            queryset = BattleResponse.objects.filter(owner=self.request.user)
+        return queryset
+
+
+class UserIdentificationView(CreateAPIView):
+    serializer_class = UserIdentificationSerializer
+    queryset = Identification.objects.all()
+    permission_classes = [IsAuthenticated]
         
 
 class NotificationView(ListAPIView):

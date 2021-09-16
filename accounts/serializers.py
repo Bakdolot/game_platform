@@ -6,8 +6,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, AuthenticationFailed
 from rest_framework.exceptions import (AuthenticationFailed, ValidationError)
 
-from .models import Notification, User, UserComment, UserProfile, UserScores
-from main.models import Game
+from .models import Identification, Notification, User, UserComment, UserProfile, UserScores
+from main.models import Game, Battle
 from fcm_django.models import FCMDevice
 
 
@@ -22,7 +22,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ['user', 'first_name', 'last_name', 'image', 'balance', 
             'whatsapp_phone', 'telegram_phone', 'description', 'steem_account', 
-            'get_likes_count', 'get_dislikes_count', 'get_battles']
+            'get_likes_count', 'get_dislikes_count', 'get_battles', 'get_rate']
+
+
+class UserBattlesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Battle
+        fields = ['title', 'rate', 'start_date', 'status', 'get_game_icon']
 
 
 class UserPlayedGamesSerializer(serializers.ModelSerializer):
@@ -31,12 +37,30 @@ class UserPlayedGamesSerializer(serializers.ModelSerializer):
         fields = ['name', 'icon']
 
 
+class CreateScoreUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserScores
+        fields = '__all__'
+
+
 class UserGameResultsSerializer(serializers.Serializer):
     game = UserPlayedGamesSerializer(many=True)
     battles = serializers.IntegerField()
     victories = serializers.IntegerField()
     defeats = serializers.IntegerField()
     victory_percent = serializers.IntegerField()
+
+
+class CreateCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserComment
+        fields = '__all__'
+
+
+class UserIdentificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Identification
+        fields = '__all__'
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -49,12 +73,6 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         exclude = ['likes', 'dislikes']
-
-
-class UserScoreSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserScores
-        fields = ['get_score']
 
 
 class UserCommentsSerializer(serializers.ModelSerializer):
