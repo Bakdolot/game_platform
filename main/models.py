@@ -5,6 +5,7 @@ from django.db.models.fields import related
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 from django.conf import settings
+from rest_framework.serializers import ModelSerializer
 
 
 class Category(models.Model):
@@ -56,7 +57,13 @@ class Battle(models.Model):
     STATUS_CHOICES = (
         ('1', _('В ожидании')),
         ('2', _('В процессе')),
-        ('3', _('Закончено'))
+        ('3', _('Закончено')),
+        ('4', _('Отменён'))
+    )
+
+    WINNER_CHOICES = (
+        ('1', _('Заказчик')),
+        ('2', _('Исполнитель'))
     )
 
     title = models.CharField(verbose_name=_('Название'), max_length=200)
@@ -68,8 +75,9 @@ class Battle(models.Model):
     views = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name=_('Просмотры'), related_name='views', blank=True)
     reposts = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name=_('Репосты'), related_name='reposts', blank=True)
     create_at = models.DateTimeField(verbose_name=_('Дата создание'), auto_now_add=True)
-    status = models.CharField(choices=STATUS_CHOICES, verbose_name=_('Статус'), max_length=50)
-    is_published = models.BooleanField(verbose_name=_('Опубликован'), default=False)
+    status = models.CharField(choices=STATUS_CHOICES, verbose_name=_('Статус'), max_length=50, default='1')
+    battle_response = models.ForeignKey('BattleResponse', verbose_name=_('Исполнитель'), on_delete=models.SET_NULL, null=True, blank=True, related_name='Battle_battle_response')
+    winner = models.CharField(max_length=50, choices=WINNER_CHOICES, verbose_name=_('Победитель'), blank=True)
 
     class Meta:
         verbose_name = _('Битва')
@@ -100,33 +108,33 @@ class BattleMembers(models.Model):
     )
 
     format = models.CharField(verbose_name=('Формат'), max_length=10, choices=FORMAT_CHOICES)
-    battle = models.OneToOneField(Battle, verbose_name=_('Битва'), on_delete=models.CASCADE)
+    battle = models.ForeignKey(Battle, verbose_name=_('Битва'), on_delete=models.CASCADE)
     team = models.CharField(verbose_name=_('Команда'), max_length=200)
-    player_1 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 1'), on_delete=models.SET_NULL, null=True, related_name='battle_member_player_1')
-    player_2 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 2'), on_delete=models.SET_NULL, null=True, blank=True, related_name='battle_member_player_2')
-    player_3 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 3'), on_delete=models.SET_NULL, null=True, blank=True, related_name='battle_member_player_3')
-    player_4 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 4'), on_delete=models.SET_NULL, null=True, blank=True, related_name='battle_member_player_4')
-    player_5 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 5'), on_delete=models.SET_NULL, null=True, blank=True, related_name='battle_member_player_5')
+    player_1 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 1'), on_delete=models.CASCADE, related_name='player_1')
+    player_2 = models.CharField(verbose_name=_('Игрок 2'), blank=True, max_length=25)
+    player_3 = models.CharField(verbose_name=_('Игрок 3'), blank=True, max_length=25)
+    player_4 = models.CharField(verbose_name=_('Игрок 4'), blank=True, max_length=25)
+    player_5 = models.CharField(verbose_name=_('Игрок 5'), blank=True, max_length=25)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Заказчик'), on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _('Участники битвы')
         verbose_name_plural = _('Участники битвы')
         ordering = ['-id']
-        
-        
+           
     def __str__ (self):
         return f'{self.owner.username} -> {self.battle}'
+
 
 class BattleResponse(models.Model):
     battle = models.ForeignKey(Battle, on_delete=CASCADE, verbose_name=_('Битва'))
     description = models.TextField(verbose_name=_('Описание'))
     team = models.CharField(verbose_name=_('Команда'), max_length=200)
-    player_1 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 1'), on_delete=models.SET_NULL, null=True, related_name='battle_response_player_1')
-    player_2 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 2'), on_delete=models.SET_NULL, null=True, blank=True, related_name='battle_response_player_2')
-    player_3 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 3'), on_delete=models.SET_NULL, null=True, blank=True, related_name='battle_response_player_3')
-    player_5 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 5'), on_delete=models.SET_NULL, null=True, blank=True, related_name='battle_response_player_5')
-    player_4 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 4'), on_delete=models.SET_NULL, null=True, blank=True, related_name='battle_response_player_4')
+    player_1 = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Игрок 1'), on_delete=models.CASCADE, related_name='player')
+    player_2 = models.CharField(verbose_name=_('Игрок 2'), blank=True, max_length=25)
+    player_3 = models.CharField(verbose_name=_('Игрок 3'), blank=True, max_length=25)
+    player_5 = models.CharField(verbose_name=_('Игрок 5'), blank=True, max_length=25)
+    player_4 = models.CharField(verbose_name=_('Игрок 4'), blank=True, max_length=25)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('Заказчик'), on_delete=models.CASCADE)
 
     class Meta:

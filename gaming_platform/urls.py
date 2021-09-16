@@ -20,6 +20,7 @@ from .yasg import urlpatterns as doc_urls
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('accounts.urls')),
+    path('main/', include('main.urls')),
 ]
 
 urlpatterns += doc_urls
