@@ -10,6 +10,7 @@ from django_filters import rest_framework as filters
 from .models import *
 from .serializers import *
 from accounts.models import UserProfile
+from .tasks import send_email
 
 
 class BattleListView(generics.ListAPIView):
@@ -116,10 +117,6 @@ class CreateBattleView(generics.CreateAPIView):
     serializer_class = CreateBattleSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer(owner=request.user)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
         profile = UserProfile.objects.get(user=request.user)
         if request.data['rate'] > profile.balance:
             return Response({
@@ -127,6 +124,10 @@ class CreateBattleView(generics.CreateAPIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         profile.balance -= request.data['rate']
+        serializer = self.get_serializer(data=request.data)
+        serializer(owner=request.user)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -136,6 +137,19 @@ class CreateBattleMembersView(generics.CreateAPIView):
 
 class QuestionView(generics.CreateAPIView):
     serializer_class = QuestionsSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        text = f"""
+        email ->  {serializer.data['email']}
+        text  ->  {serializer.data['text']}
+        """
+        send_email.apply_async((text, ))
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 
 
 class MainBattleResponseView(generics.CreateAPIView):

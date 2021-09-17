@@ -1,12 +1,14 @@
 from rest_framework.generics import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, filters
+from django_filters import rest_framework
 from fcm_django.models import FCMDevice
 
 from .utils import send_message_code, generate_code
 from .models import *
 from .serializers import *
+from accounts.tasks import cheking_acc
 from main.models import BattleResponse, Game
 
 from random import choices
@@ -38,6 +40,13 @@ class FcmCreateView(UpdateAPIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class AllUsersView(ListAPIView):
+    serializer_class = AllUsersSerializer
+    queryset = UserProfile.objects.all()
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['user__username', 'first_name', 'last_name']
 
 
 class UserProfileDetailView(RetrieveAPIView):
@@ -123,8 +132,8 @@ class NotificationView(ListAPIView):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self, request, *args, **kwargs):
-        queryset = Notification.objects.filter(user=request.user)
+    def get_queryset(self):
+        queryset = Notification.objects.filter(user=self.request.user)
         return queryset
 
 
@@ -154,6 +163,7 @@ class RegisterView(GenericAPIView):
             UserProfile.objects.create(user=user,
                                        first_name=first_name,
                                        last_name=last_name)
+            cheking_acc.apply_async((user.id, ))
             return Response(
                 {'phone': serializer.data.get('phone'), 'message': sms_resp},
                 status=status.HTTP_201_CREATED)

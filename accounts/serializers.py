@@ -1,5 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
+from django.db import models
+from django.db.models import fields
 from django.utils.translation import gettext_lazy as _
 
 from rest_framework import serializers
@@ -61,6 +63,12 @@ class UserIdentificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Identification
         fields = '__all__'
+
+
+class AllUsersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['get_username', 'first_name', 'last_name', 'image']
 
 
 class NotificationSerializer(serializers.ModelSerializer):

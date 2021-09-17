@@ -17,6 +17,14 @@ class User(AbstractUser):
                            message=_('Pass valid phone number'))
         ])
     otp = models.CharField(verbose_name=_('SMS code'), max_length=4)
+    is_active = models.BooleanField(
+        _('active'),
+        default=False,
+        help_text=_(
+            'Designates whether this user should be treated as active. '
+            'Unselect this instead of deleting accounts.'
+        ),
+    )
 
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = ['username']
@@ -48,6 +56,8 @@ class UserProfile(models.Model):
         verbose_name = _('Профиль пользователя')
         verbose_name_plural = _('Профили пользователей')
     
+    def get_username(self):
+        return self.user.username
 
     def get_likes_count(self):
         return self.likes.all().count()
