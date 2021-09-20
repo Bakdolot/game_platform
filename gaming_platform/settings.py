@@ -14,6 +14,11 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+import dj-database-url
+
+
+db_from_env = dj-database-url.config()
+DATABASE['default'].update(db_from_env)
 
 load_dotenv()
 
