@@ -140,3 +140,5 @@ class QuestionView(generics.CreateAPIView):
 
 class MainBattleResponseView(generics.CreateAPIView):
     serializer_class = MainBattleResponseSerializer
+
+
