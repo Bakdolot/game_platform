@@ -14,11 +14,11 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
-import dj-database-url
+# import dj-database-url
 
 
-db_from_env = dj-database-url.config()
-DATABASE['default'].update(db_from_env)
+# db_from_env = dj-database-url.config()
+# DATABASE['default'].update(db_from_env)
 
 load_dotenv()
 
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'whitenoise.runserver_nostatic',
 
     'fcm_django',
     'rest_framework',
@@ -68,6 +69,7 @@ FCM_DJANGO_SETTINGS = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
@@ -154,9 +156,11 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'gaming_platform/static'),
 ]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
