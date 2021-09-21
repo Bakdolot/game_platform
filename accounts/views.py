@@ -124,8 +124,8 @@ class NotificationView(ListAPIView):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self, request, *args, **kwargs):
-        queryset = Notification.objects.filter(user=request.user)
+    def get_queryset(self):
+        queryset = Notification.objects.filter(user=self.request.user)
         return queryset
 
 
@@ -152,9 +152,10 @@ class RegisterView(GenericAPIView):
             user = User.objects.get(phone=phone)
             user.otp = code
             user.save()
-            UserProfile.objects.create(user=user,
-                                       first_name=first_name,
-                                       last_name=last_name)
+            # UserProfile.objects.create(user=user,
+            #                            first_name=first_name,
+            #                            last_name=last_name)
+            UserProfile.objects.create(user=user)
             return Response(
                 {'phone': serializer.data.get('phone'), 'message': sms_resp},
                 status=status.HTTP_201_CREATED)
