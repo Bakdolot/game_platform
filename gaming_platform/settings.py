@@ -126,9 +126,14 @@ DATABASES = {
     }
 }
 
-NIKITA_LOGIN = os.getenv('NIKITA_LOGIN')
-NIKITA_PASSWORD = os.getenv('NIKITA_PASSWORD')
-NIKITA_SENDER = os.getenv('NIKITA_SENDER')
+# NIKITA_LOGIN = os.getenv('NIKITA_LOGIN')
+# NIKITA_PASSWORD = os.getenv('NIKITA_PASSWORD')
+# NIKITA_SENDER = os.getenv('NIKITA_SENDER')
+
+NIKITA_LOGIN = 'Iminov'
+NIKITA_PASSWORD = '9KtUJ84_'
+NIKITA_SENDER = 'GAME_PLATFORM.KG'
+NIKITA_WSDL = ''
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
