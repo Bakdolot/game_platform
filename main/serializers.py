@@ -78,7 +78,7 @@ class CreateBattleMembersSerializer(serializers.ModelSerializer):
 class CreateBattleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Battle
-        exclude = ['views', 'reposts', 'create_at', 'status']
+        exclude = ['views', 'reposts', 'create_at', 'status', 'winner', 'battle_response']
 
 
 class BattleEditSerializer(serializers.ModelSerializer):

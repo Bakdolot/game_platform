@@ -1,6 +1,6 @@
 from django.http import request
 from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user, get_user_model
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -10,6 +10,8 @@ from django_filters import rest_framework as filters
 from .models import *
 from .serializers import *
 from accounts.models import UserProfile
+
+from decimal import Decimal
 
 
 class BattleListView(generics.ListAPIView):
@@ -31,7 +33,7 @@ class BattleDetailView(generics.GenericAPIView):
             'user2': UserProfile.objects.get(user=battle.owner)
             }
         battle_members = BattleMembers.objects.filter(battle=battle)
-        battle_list = Battle.objects.filter(game=battle.game, status='1')
+        battle_list = Battle.objects.filter(game=battle.game, status='1').exclude(id=kwargs['id'])
         battle_list_serializer = SimilarBattlesSerializer(battle_list, many=True)
         battle_members_serializer = BattleMembersSerializer(battle_members, many=True)
         battle_detail_serializer = DetailBattleSerializer(battle)
@@ -53,6 +55,16 @@ class BattleDetailView(generics.GenericAPIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def delete(self, request, *args, **kwargs):
+        battle = get_object_or_404(Battle.objects.all(), id=kwargs['id'])
+        if self.request.user == battle.owner:
+            user = UserProfile.objects.get(user=self.request.user)
+            user.balance += Decimal(battle.rate)
+            user.save()
+            battle.delete()
+            return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_403_FORBIDDEN)
 
 
@@ -116,17 +128,20 @@ class CreateBattleView(generics.CreateAPIView):
     serializer_class = CreateBattleSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer(owner=request.user)
+        data = {}
+        data.update(request.data)
+        data['owner'] = request.user.id
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         profile = UserProfile.objects.get(user=request.user)
-        if request.data['rate'] > profile.balance:
+        if int(request.data['rate']) > profile.balance:
             return Response({
                 'Not enough of balance': 'User doesnt have enough the balance'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        profile.balance -= request.data['rate']
+        profile.balance -= int(request.data['rate'])
+        profile.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
