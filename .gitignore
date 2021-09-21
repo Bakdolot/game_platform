@@ -327,8 +327,8 @@ fabric.properties
 /verstka
 
 dump.sql
-*/migrations/*
-!*/migrations/__init__.py
+# */migrations/*
+# !*/migrations/__init__.py
 /credentials.json
 
 # Pyre type checker
