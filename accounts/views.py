@@ -56,8 +56,8 @@ class UserProfileDetailView(RetrieveAPIView):
         games = []
         for game in Game.objects.filter(followers=user):
             battle = BattleHistory.objects.filter(battle__game=game, user=user)
-            victories = battle(result='2').count()
-            defeats = battle(result='1').count()
+            victories = battle.filter(result='2').count()
+            defeats = battle.filter(result='1').count()
             victory_percent = 0
             if battle.count():
                 victory_percent = (victories * 100) / battle.count()
