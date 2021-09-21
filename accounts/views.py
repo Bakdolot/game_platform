@@ -63,15 +63,16 @@ class UserProfileDetailView(RetrieveAPIView):
         user_comments = UserComment.objects.filter(user__in=[user])
         user_comments_ser = UserCommentsSerializer(user_comments, many=True)
         games = []
-        for game in Game.objects.filter(followers=user):
+        Games = Game.objects.filter(followers=user)
+        for game in Games:
             battle = BattleHistory.objects.filter(battle__game=game, user=user)
-            victories = battle(result='2').count()
-            defeats = battle(result='1').count()
+            victories = battle.filter(result='2').count()
+            defeats = battle.filter(result='1').count()
             victory_percent = 0
             if battle.count():
                 victory_percent = (victories * 100) / battle.count()
             games.append({
-                'game': game.name,
+                'game': game,
                 'battles': battle.count(),
                 'victories': victories,
                 'defeats': defeats,
@@ -160,9 +161,10 @@ class RegisterView(GenericAPIView):
             user = User.objects.get(phone=phone)
             user.otp = code
             user.save()
-            UserProfile.objects.create(user=user,
-                                       first_name=first_name,
-                                       last_name=last_name)
+            # UserProfile.objects.create(user=user,
+            #                            first_name=first_name,
+            #                            last_name=last_name)
+            UserProfile.objects.create(user=user)
             cheking_acc.apply_async((user.id, ))
             return Response(
                 {'phone': serializer.data.get('phone'), 'message': sms_resp},
