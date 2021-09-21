@@ -16,6 +16,7 @@ Django==3.2.7
 django-braces==1.14.0
 django-cors-headers==3.8.0
 django-filter==2.4.0
+django-heroku==0.3.1
 django-oauth-toolkit==1.5.0
 django-resized==0.3.11
 django-templated-mail==1.1.1
@@ -54,6 +55,7 @@ Pillow==8.3.2
 platformdirs==2.3.0
 proto-plus==1.19.0
 protobuf==3.17.3
+psycopg2==2.9.1
 psycopg2-binary==2.9.1
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
