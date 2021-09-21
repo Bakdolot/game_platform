@@ -44,7 +44,7 @@ class CreateScoreUserSerializer(serializers.ModelSerializer):
 
 
 class UserGameResultsSerializer(serializers.Serializer):
-    game = UserPlayedGamesSerializer(many=True)
+    game = UserPlayedGamesSerializer()
     battles = serializers.IntegerField()
     victories = serializers.IntegerField()
     defeats = serializers.IntegerField()

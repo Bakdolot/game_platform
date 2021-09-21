@@ -54,7 +54,8 @@ class UserProfileDetailView(RetrieveAPIView):
         user_comments = UserComment.objects.filter(user__in=[user])
         user_comments_ser = UserCommentsSerializer(user_comments, many=True)
         games = []
-        for game in Game.objects.filter(followers=user):
+        Games = Game.objects.filter(followers=user)
+        for game in Games:
             battle = BattleHistory.objects.filter(battle__game=game, user=user)
             victories = battle.filter(result='2').count()
             defeats = battle.filter(result='1').count()
@@ -62,7 +63,7 @@ class UserProfileDetailView(RetrieveAPIView):
             if battle.count():
                 victory_percent = (victories * 100) / battle.count()
             games.append({
-                'game': game.name,
+                'game': game,
                 'battles': battle.count(),
                 'victories': victories,
                 'defeats': defeats,
