@@ -103,28 +103,28 @@ WSGI_APPLICATION = 'gaming_platform.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT')
-    }
-}
-
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'd7sij1d6jsn21i',
-#         'USER': 'zvjokdjkouavjl',
-#         'PASSWORD': 'c6d17f2c9ced63942dda83478b4876181a8b73405de0bf86765a959ed3d2a85e',
-#         'HOST': 'ec2-54-73-152-36.eu-west-1.compute.amazonaws.com',
-#         'PORT': '5432'
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('DB'),
+#         'USER': os.getenv('DB_USER'),
+#         'PASSWORD': os.getenv('DB_PASSWORD'),
+#         'HOST': os.getenv('DB_HOST'),
+#         'PORT': os.getenv('DB_PORT')
 #     }
 # }
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'd7sij1d6jsn21i',
+        'USER': 'zvjokdjkouavjl',
+        'PASSWORD': 'c6d17f2c9ced63942dda83478b4876181a8b73405de0bf86765a959ed3d2a85e',
+        'HOST': 'ec2-54-73-152-36.eu-west-1.compute.amazonaws.com',
+        'PORT': '5432'
+    }
+}
 
 # NIKITA_LOGIN = os.getenv('NIKITA_LOGIN')
 # NIKITA_PASSWORD = os.getenv('NIKITA_PASSWORD')

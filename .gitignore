@@ -323,7 +323,7 @@ fabric.properties
 /staticfiles
 /static
 /verstka
-/gaming_platform/settings.py
+# /gaming_platform/settings.py
 
 dump.sql
 */migrations/*

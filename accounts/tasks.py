@@ -6,7 +6,7 @@ from .models import UserProfile
 
 @app.task()
 def cheking_acc(id):
-    sleep(15)
+    sleep(900)
     user = get_user_model().objects.get(id=id)
     if user.is_active == False:
         UserProfile.objects.get(user=user).delete()
