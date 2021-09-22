@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+
+import dj_database_url
 import django_heroku
 
 load_dotenv()
@@ -44,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'whitenoise.runserver_nostatic',
 
     'fcm_django',
     'rest_framework',
@@ -64,6 +67,7 @@ FCM_DJANGO_SETTINGS = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
@@ -114,14 +118,22 @@ WSGI_APPLICATION = 'gaming_platform.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'd56noir5mvdiim',
-        'USER': 'eewqwrujmrfbjl',
-        'PASSWORD': 'a11233a91d43fca9f5c0ec701af4d95b5c6f00c6f52f40d97345aa57524afa8e',
-        'HOST': 'ec2-63-33-239-176.eu-west-1.compute.amazonaws.com',
+        'NAME': 'd7sij1d6jsn21i',
+        'USER': 'zvjokdjkouavjl',
+        'PASSWORD': 'c6d17f2c9ced63942dda83478b4876181a8b73405de0bf86765a959ed3d2a85e',
+        'HOST': 'ec2-54-73-152-36.eu-west-1.compute.amazonaws.com',
         'PORT': '5432'
     }
 }
 
+# NIKITA_LOGIN = os.getenv('NIKITA_LOGIN')
+# NIKITA_PASSWORD = os.getenv('NIKITA_PASSWORD')
+# NIKITA_SENDER = os.getenv('NIKITA_SENDER')
+
+NIKITA_LOGIN = 'Iminov'
+NIKITA_PASSWORD = '9KtUJ84_'
+NIKITA_SENDER = 'GAME_PLATFORM.KG'
+NIKITA_WSDL = ''
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -160,14 +172,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'gaming_platform/static'),
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 django_heroku.settings(locals())
 
 # Default primary key field type

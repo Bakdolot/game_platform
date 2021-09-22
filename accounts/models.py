@@ -17,15 +17,7 @@ class User(AbstractUser):
                            message=_('Pass valid phone number'))
         ])
     otp = models.CharField(verbose_name=_('SMS code'), max_length=4)
-    is_active = models.BooleanField(
-        _('active'),
-        default=False,
-        help_text=_(
-            'Designates whether this user should be treated as active. '
-            'Unselect this instead of deleting accounts.'
-        ),
-    )
-
+    
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = ['username']
 
