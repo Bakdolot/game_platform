@@ -159,6 +159,7 @@ class RegisterView(GenericAPIView):
             serializer.save()
             sms_resp = send_message_code(id, code, phone)
             user = User.objects.get(phone=phone)
+            user.is_active = False
             user.otp = code
             user.save()
             # UserProfile.objects.create(user=user,
