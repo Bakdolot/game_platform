@@ -14,9 +14,7 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
-
-import dj_database_url
-import django_heroku
+from firebase_admin import initialize_app
 
 load_dotenv()
 
@@ -46,7 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'whitenoise.runserver_nostatic',
 
     'fcm_django',
     'rest_framework',
@@ -67,7 +64,6 @@ FCM_DJANGO_SETTINGS = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
@@ -80,6 +76,8 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'gaming_platform.urls'
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+FIREBASE_APP = initialize_app()
 
 TEMPLATES = [
     {
@@ -103,32 +101,20 @@ WSGI_APPLICATION = 'gaming_platform.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('DB'),
-#         'USER': os.getenv('DB_USER'),
-#         'PASSWORD': os.getenv('DB_PASSWORD'),
-#         'HOST': os.getenv('DB_HOST'),
-#         'PORT': os.getenv('DB_PORT')
-#     }
-# }
-
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'd7sij1d6jsn21i',
-        'USER': 'zvjokdjkouavjl',
-        'PASSWORD': 'c6d17f2c9ced63942dda83478b4876181a8b73405de0bf86765a959ed3d2a85e',
-        'HOST': 'ec2-54-73-152-36.eu-west-1.compute.amazonaws.com',
-        'PORT': '5432'
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT')
     }
 }
 
-# NIKITA_LOGIN = os.getenv('NIKITA_LOGIN')
-# NIKITA_PASSWORD = os.getenv('NIKITA_PASSWORD')
-# NIKITA_SENDER = os.getenv('NIKITA_SENDER')
+NIKITA_LOGIN = os.getenv('NIKITA_LOGIN')
+NIKITA_PASSWORD = os.getenv('NIKITA_PASSWORD')
+NIKITA_SENDER = os.getenv('NIKITA_SENDER')
 
 NIKITA_LOGIN = 'Iminov'
 NIKITA_PASSWORD = '9KtUJ84_'
@@ -177,23 +163,34 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'gaming_platform/static'),
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-django_heroku.settings(locals())
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+SMS_CODE_TIME = 300
+
+
+CACHES = {
+    'default': {
+        'BACKEND': "django_redis.cache.RedisCache",
+        'LOCATION': 'redis://127.0.0.1:6379',
+    }
+}
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
+}
+
+FCM_DJANGO_SETTINGS = {
+    "UPDATE_ON_DUPLICATE_REG_ID": True,
 }
 
 SIMPLE_JWT = {
@@ -203,6 +200,17 @@ SIMPLE_JWT = {
     'JWT_ALLOW_REFRESH': True,
     'JWT_EXPIRATION_DELTA': timedelta(hours=24),
     'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=14),
+}
+
+SWAGGER_SETTINGS  = {
+    'USE_SESSION_AUTH': True,
+    'SECURITY_DEFINITIONS' : {
+         'Bearer' : {
+             'type' : 'apiKey' ,
+             'name' : 'Authorization' ,
+             'in' : 'header'
+        }
+    }
 }
 
 EMAIL_FROM = 'some.email634@gmail.com'

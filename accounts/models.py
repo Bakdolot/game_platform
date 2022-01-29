@@ -1,6 +1,4 @@
-from django.contrib.auth import get_user_model
 from django.db import models
-from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractUser
 from django.db.models.fields import IntegerField
 from django.utils.translation import ugettext_lazy as _
@@ -8,28 +6,43 @@ from django.conf import settings
 from django_resized import ResizedImageField
 
 from main.models import Battle
+from .validators import phone_validator
+from .managers import UserManager
 
 class User(AbstractUser):
-    phone = models.CharField(verbose_name=_('Телефон'),
-                             max_length=12,
-                             null=True, unique=True, validators=[
-            RegexValidator(regex=r'^996\d{9}$',
-                           message=_('Pass valid phone number'))
-        ])
-    otp = models.CharField(verbose_name=_('SMS code'), max_length=4)
-    
-    USERNAME_FIELD = 'phone'
-    REQUIRED_FIELDS = ['username']
+    phone = models.CharField(
+        _('user phone number'), 
+        max_length=15, 
+        unique=True,
+        help_text=_('Required. 9 digits in format: 996*********** without "+".'),
+        validators=[phone_validator],
+        error_messages={
+            'unique': _("A user with that phone number already exists."),
+        },
+    )
+    is_active = models.BooleanField(
+        _('active'),
+        default=False,
+        help_text=_(
+            'Designates whether this user should be treated as active. '
+            'Unselect this instead of deleting accounts.'
+        ),
+    )
 
-    def __str__(self):
-        return self.username
+
+    objects = UserManager()
+
+    USERNAME_FIELD = 'phone'
+
+    class Meta(AbstractUser.Meta):
+        swappable = 'AUTH_USER_MODEL'
 
 
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name=_('Пользователь'))
     first_name = models.CharField(max_length=25, blank=True, verbose_name=_('Имя'))
     last_name = models.CharField(max_length=25, blank=True, verbose_name=_('Фамилия'))
-    image = models.ImageField(upload_to='user_image/', verbose_name=_('Фотография'))
+    image = models.ImageField(upload_to='user_image/', verbose_name=_('Фотография'), blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0,verbose_name=_('Баланс'))
     whatsapp_phone = models.CharField(max_length=20, blank=True, verbose_name=_('Ватсап номер'))
     telegram_phone = models.CharField(max_length=20, blank=True, verbose_name=_('Телеграм номер'))
@@ -47,9 +60,6 @@ class UserProfile(models.Model):
     class Meta:
         verbose_name = _('Профиль пользователя')
         verbose_name_plural = _('Профили пользователей')
-    
-    def get_username(self):
-        return self.user.username
 
     def get_likes_count(self):
         return self.likes.all().count()

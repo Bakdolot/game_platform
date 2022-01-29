@@ -1,92 +1,30 @@
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
-from django.db import models
-from django.db.models import fields
 from django.utils.translation import gettext_lazy as _
+from django.core.cache import cache
+from django.contrib.auth.password_validation import validate_password as PhoneValidator
+from django.contrib.auth.password_validation import validate_password
+from django.conf import settings
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, AuthenticationFailed
 from rest_framework.exceptions import (AuthenticationFailed, ValidationError)
+from rest_framework.fields import CurrentUserDefault
 
-from .models import Identification, Notification, User, UserComment, UserProfile, UserScores
+from .models import (
+    Identification, 
+    Notification, 
+    User, 
+    UserComment, 
+    UserProfile, 
+    UserScores,
+    BattleHistory
+)
 from main.models import Game, Battle
-from fcm_django.models import FCMDevice
+from .choices import SendCodeType
+from .utils import generate_code, send_message_code
 
-
-class FcmCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FCMDevice
-        fields = '__all__'
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ['user', 'first_name', 'last_name', 'image', 'balance', 
-            'whatsapp_phone', 'telegram_phone', 'description', 'steem_account', 
-            'get_likes_count', 'get_dislikes_count', 'get_battles', 'get_rate']
-
-
-class UserBattlesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Battle
-        fields = ['title', 'rate', 'start_date', 'status', 'get_game_icon']
-
-
-class UserPlayedGamesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Game
-        fields = ['name', 'icon']
-
-
-class CreateScoreUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserScores
-        fields = '__all__'
-
-
-class UserGameResultsSerializer(serializers.Serializer):
-    game = UserPlayedGamesSerializer()
-    battles = serializers.IntegerField()
-    victories = serializers.IntegerField()
-    defeats = serializers.IntegerField()
-    victory_percent = serializers.IntegerField()
-
-
-class CreateCommentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserComment
-        fields = '__all__'
-
-
-class UserIdentificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Identification
-        fields = '__all__'
-
-
-class AllUsersSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = ['get_username', 'first_name', 'last_name', 'image']
-
-
-class NotificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Notification
-        fields = '__all__'
-
-
-class UpdateProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        exclude = ['likes', 'dislikes']
-
-
-class UserCommentsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserComment
-        fields = ['owner', 'text', 'create_at']
+from uuid import uuid4
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -103,63 +41,215 @@ class RegisterSerializer(serializers.ModelSerializer):
         return password
 
     def create(self, validated_data):
-        _user = get_user_model()
-        phone = validated_data.get('phone', '')
-        username = validated_data.get('username', '')
-        password = validated_data.get('password', '')
-        user = _user.objects.create_user(phone=phone, username=username,
-                                         password=password)
-        user.is_active = False
-        user.save()
-        return user
-
-
-class SetNewPasswordSerializer(serializers.Serializer):
-    phone = serializers.CharField(required=True)
-    code = serializers.CharField(max_length=4, required=True)
-    password = serializers.CharField(write_only=True, min_length=1,
-                                     required=True)
-    password2 = serializers.CharField(write_only=True, min_length=1,
-                                      required=True)
-
-    class Meta:
-        fields = ['phone', 'code', 'password', 'password2']
-
-    def validate(self, attrs):
-        try:
-            phone = attrs.get('phone', '')
-            password = attrs.get('password', '')
-            password2 = attrs.get('password2', '')
-            code = attrs.get('code', '')
-            user = User.objects.get(phone=phone)
-            if code != user.otp:
-                raise AuthenticationFailed('Code is incorrect')
-            if password == password2:
-                user.set_password(password)
-                user.save()
-            elif password != password2:
-                raise AuthenticationFailed('Password is not match')
-        except User.DoesNotExist:
-            raise AuthenticationFailed('User is not exists')
-        return super().validate(attrs)
-
-
-class ChangePasswordSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True,
-                                     validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True)
-
-    class Meta:
-        model = User
-        fields = ['password', 'password2']
-
-    def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError(
-                {'password': 'Password field didn\'t match.'})
-        return attrs
-
-    def update(self, instance, validated_data):
+        instance = super().create(validated_data)
         instance.set_password(validated_data['password'])
         instance.save()
         return instance
+    
+
+class UserSendCodeSerializer(serializers.Serializer):
+    phone = serializers.CharField(validators=[PhoneValidator], required=True)
+    type = serializers.ChoiceField(choices=SendCodeType.choices, required=True)
+
+    def validate_phone(self, phone):
+        try:
+            self.instance = User.objects.get(phone=phone)
+            return phone
+        except User.DoesNotExist as er:
+            raise ValidationError(er)
+    
+    def send_otp_code(self):
+        data = self.validated_data
+        code = generate_code()
+        print(code)
+        cache.set(code, data['phone'], settings.SMS_CODE_TIME, version=data['type'])
+        send_message_code(uuid4()[:10], code, data['phone'])
+
+
+class RegisterCodeVerifySerializer(serializers.Serializer):
+    code = serializers.IntegerField(required=True)
+
+    def validate(self, attrs):
+        phone = cache.get(attrs['code'], version=SendCodeType.REGISTER)
+        if phone is not None:
+            self.instance = User.objects.get(phone=phone)
+            return attrs
+        raise ValidationError(_('не правельный код'))
+    
+    def update(self):
+        self.instance.is_active = True
+        self.instance.save()
+        return self.instance
+
+
+class PasswordResetVerifySerializer(serializers.Serializer):
+    code = serializers.IntegerField(required=True)
+    password = serializers.CharField(required=True)
+
+    def validate_password(self, password):
+        try:
+            validate_password(password)
+            return password
+        except ValidationError as exc:
+            raise ValidationError(exc)
+
+    def validate_code(self, code):
+        phone = cache.get(code, version=SendCodeType.RESET_PASSWORD)
+        if phone is not None:
+            self.instance = User.objects.get(phone=phone)
+            return code
+        raise ValidationError(_('не правельный код'))
+    
+    def update(self):
+        self.instance.set_password(self.validated_data['password'])
+        self.instance.save()
+        return self.instance
+
+
+class PhoneResetVerifySerializer(serializers.Serializer):
+    code = serializers.IntegerField(required=True)
+
+    def validate(self, attrs):
+        phone = cache.get(attrs['code'], version=SendCodeType.RESET_PASSWORD)
+        if phone is not None:
+            attrs['new_phone'] = phone
+            return attrs
+        raise ValidationError(_('не правельный код'))
+    
+    def update(self, instance):
+        instance.phone = self.validated_data['new_phone']
+        instance.save()
+        return instance
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    likes_count = serializers.SerializerMethodField()
+    dislikes_count = serializers.SerializerMethodField()
+    battles = serializers.SerializerMethodField()
+    rate = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserProfile
+        fields = ['user', 'first_name', 'last_name', 'image', 'balance', 
+            'whatsapp_phone', 'telegram_phone', 'description', 'steem_account', 
+            'likes_count', 'dislikes_count', 'battles', 'rate']
+
+    def get_likes_count(self, instance):
+        return instance.likes.all().count()
+    
+    def get_dislikes_count(self, instance):
+        return instance.dislikes.all().count()
+
+    def get_battles(self, instance):
+        return {
+            'battles': BattleHistory.objects.filter(user = instance.user).count(),
+            'victories': BattleHistory.objects.filter(user = instance.user, result='2').count(),
+            'defeats': BattleHistory.objects.filter(user = instance.user, result='1').count(),
+        }
+    
+    def get_rate(self, instance):
+        courtesy = 0
+        user_scores = UserScores.objects.filter(user__id=instance.id)
+        if instance.courtesy_rate_sum:
+            courtesy = instance.courtesy_rate_sum / user_scores.filter(type='1').count()
+        punctuality = 0
+        if instance.punctuality_rate_sum:
+            punctuality = instance.punctuality_rate_sum / user_scores.filter(type='2').count()
+        adequacy = 0
+        if instance.adequacy_rate_sum:
+            adequacy = instance.adequacy_rate_sum / user_scores.filter(type='3').count()
+        return {
+            'courtesy': courtesy,
+            'punctuality': punctuality,
+            'adequacy': adequacy
+        }
+
+
+class UserBattlesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Battle
+        fields = ['title', 'rate', 'start_date', 'status', 'get_game_icon']
+
+
+class CreateScoreUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserScores
+        fields = '__all__'
+        
+
+class UserGameResultsSerializer(serializers.ModelSerializer):
+    battles = serializers.SerializerMethodField()
+    victories = serializers.SerializerMethodField()
+    defeats = serializers.SerializerMethodField()
+    victory_percent = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Game
+        fields = ['name', 'icon', 'battles', 'victories', 'defeats', 'victory_percent']
+    
+    def get_battles(self, instance):
+        self.user_battles = BattleHistory.objects.filter(battle__game=instance, user=CurrentUserDefault)
+        return self.user_battles.count()
+    
+    def get_victories(self, instance):
+        return self.user_battles.filter(result='2').count()
+
+    def get_defeats(self, instance):
+        return self.user_battles.filter(result='1').count()
+
+    def get_victory_percent(self, instance):
+        victory_percent = 0
+        battle_count = self.user_battles.count()
+        victories = self.user_battles.filter(result='2').count()
+        if battle_count:
+            victory_percent = (victories * 100) / battle_count
+        return victory_percent
+    
+
+class CreateCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserComment
+        fields = '__all__'
+
+
+class UserIdentificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Identification
+        fields = '__all__'
+
+
+class AllUsersSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'username', 'first_name', 'last_name', 'image']
+    
+    def get_username(self, instance):
+        return instance.user.username
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+
+class UpdateProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        exclude = [
+            'user',
+            'likes', 
+            'dislikes', 
+            'balance', 
+            'courtesy_rate_sum',
+            'punctuality_rate_sum',
+            'adequacy_rate_sum'
+            ]
+
+
+class UserCommentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserComment
+        fields = ['owner', 'text', 'create_at']
