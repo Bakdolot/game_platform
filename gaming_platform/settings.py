@@ -159,13 +159,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'gaming_platform/static'),
-]
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
+# Add these new lines
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Base url to serve media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Path where media is stored
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
@@ -204,13 +210,16 @@ SIMPLE_JWT = {
 
 SWAGGER_SETTINGS  = {
     'USE_SESSION_AUTH': True,
-    'SECURITY_DEFINITIONS' : {
-         'Bearer' : {
-             'type' : 'apiKey' ,
-             'name' : 'Authorization' ,
-             'in' : 'header'
-        }
-    }
+    'SECURITY_DEFINITIONS': {
+      'Basic': {
+            'type': 'basic'
+      },
+      'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+      }
+   }
 }
 
 EMAIL_FROM = 'some.email634@gmail.com'

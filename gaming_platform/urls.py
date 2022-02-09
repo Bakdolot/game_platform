@@ -18,6 +18,7 @@ from django.urls import path, include
 from .yasg import urlpatterns as doc_urls
 
 urlpatterns = [
+    path('accounts/', include('django.contrib.auth.urls')),
     path('admin/', admin.site.urls),
     path('auth/', include('accounts.urls')),
     path('main/', include('main.urls')),
