@@ -115,10 +115,6 @@ DATABASES = {
 NIKITA_LOGIN = os.getenv('NIKITA_LOGIN')
 NIKITA_PASSWORD = os.getenv('NIKITA_PASSWORD')
 NIKITA_SENDER = os.getenv('NIKITA_SENDER')
-
-NIKITA_LOGIN = 'Iminov'
-NIKITA_PASSWORD = '9KtUJ84_'
-NIKITA_SENDER = 'GAME_PLATFORM.KG'
 NIKITA_WSDL = ''
 
 # Password validation
@@ -159,32 +155,26 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-
-# Add these new lines
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'staticfiles'),
-)
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static',]
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Base url to serve media files
-MEDIA_URL = '/media/'
-
-# Path where media is stored
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "mediafiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-SMS_CODE_TIME = 300
+SMS_CODE_TIME = 200
 
 
 CACHES = {
     'default': {
         'BACKEND': "django_redis.cache.RedisCache",
-        'LOCATION': 'redis://127.0.0.1:6379',
+        'LOCATION': 'redis://redis:6379',
     }
 }
 
@@ -240,4 +230,4 @@ SERVER_EMAIL = 'some.email634@gmail.com'
 CELERY_TIMEZONE = "Asia/Bishkek"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/0' 

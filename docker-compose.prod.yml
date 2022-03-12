@@ -1,0 +1,50 @@
+version: '2'
+
+services:
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile.prod
+    command: gunicorn gaming_platform.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/home/app/web
+      - static_volume:/home/app/web/staticfiles
+      - media_volume:/home/app/web/mediafiles
+    ports:
+      - 8000:8000
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+  db:
+    image: postgres:alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.db
+  nginx:
+    build: ./nginx
+    volumes:
+      - static_volume:/home/app/web/staticfiles
+      - media_volume:/home/app/web/mediafiles
+    ports:
+      - 80:80
+    depends_on:
+      - web
+  redis:
+    image: redis:alpine
+  celery:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    command: python3 manage.py celery
+    depends_on:
+      - db
+      - redis
+      - web
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
