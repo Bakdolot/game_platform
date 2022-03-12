@@ -2,13 +2,11 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.core.cache import cache
-from django.contrib.auth.password_validation import validate_password as PhoneValidator
 from django.contrib.auth.password_validation import validate_password
 from django.conf import settings
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, AuthenticationFailed
-from rest_framework.exceptions import (AuthenticationFailed, ValidationError)
 from rest_framework.fields import CurrentUserDefault
 
 from .models import (
@@ -22,7 +20,8 @@ from .models import (
 )
 from main.models import Game, Battle
 from .choices import SendCodeType
-from .utils import generate_code, send_message_code
+from .utils import SendSMS, get_otp
+from .validators import phone_validator
 
 from uuid import uuid4
 
@@ -48,7 +47,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     
 
 class UserSendCodeSerializer(serializers.Serializer):
-    phone = serializers.CharField(validators=[PhoneValidator], required=True)
+    phone = serializers.CharField(validators=[phone_validator], required=True)
     type = serializers.ChoiceField(choices=SendCodeType.choices, required=True)
 
     def validate(self, attrs):
@@ -63,10 +62,9 @@ class UserSendCodeSerializer(serializers.Serializer):
     def send_otp_code(self):
         data = self.validated_data
         phone = data['phone']
-        code = generate_code()
-        print(code)
+        code = get_otp()
         cache.set(code, phone, settings.SMS_CODE_TIME, version=data['type'])
-        send_message_code(str(uuid4()).replace('-', '')[:10], code, phone)
+        SendSMS(phone, code).send
 
 
 class RegisterCodeVerifySerializer(serializers.Serializer):

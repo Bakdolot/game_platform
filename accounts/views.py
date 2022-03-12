@@ -4,7 +4,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status, filters, permissions
 
-from .utils import send_message_code, generate_code
 from .models import *
 from .serializers import *
 from accounts.tasks import cheking_acc
@@ -22,7 +21,7 @@ class RegisterView(CreateAPIView):
 class UserSendCodeView(GenericAPIView):
     serializer_class = UserSendCodeSerializer
 
-    def post(self, request):
+    def post(self, request): 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.send_otp_code()
