@@ -1,4 +1,5 @@
-
+mydatabase
+mydatabase1
 ### Django ###
 .env*
 *.log

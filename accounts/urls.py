@@ -38,4 +38,5 @@ urlpatterns = [
     path('user/comment/', CreateCommentView.as_view()),
     path('user/identification/', UserIdentificationView.as_view()),
     path('user/identification/detail/', UserIdentificationDetailView.as_view()),
+    path('user/user_info/<int:pk>/', UserInfoView.as_view())
 ]

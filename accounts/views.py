@@ -163,3 +163,10 @@ class UpdateProfileView(UpdateAPIView):
     def get_queryset(self):
         queryset = UserProfile.objects.filter(user=self.request.user)
         return queryset
+
+
+class UserInfoView(RetrieveAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserInfoSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
